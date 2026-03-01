@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đọc Báo – Nghe Khi Lái Xe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Lora:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #1a1209;
+      --paper: #f5f0e8;
+      --paper2: #ede7d5;
+      --accent: #c0392b;
+      --accent2: #e67e22;
+      --gold: #b8860b;
+      --muted: #7a6f5e;
+      --line: #d4c9b0;
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Lora', Georgia, serif;
+      min-height: 100vh;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 27px, var(--line) 28px);
+      background-size: 100% 28px;
+    }
+
+    header {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 4px solid var(--accent);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+    }
+
+    .masthead {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .masthead span { color: var(--accent2); font-style: italic; }
+
+    .tagline {
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #aaa;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.6);
+      border: 1px solid var(--line);
+      border-radius: 2px;
+      padding: 28px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(4px);
+      box-shadow: 4px 4px 0 var(--line);
+    }
+
+    label {
+      display: block;
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+      font-family: 'Lora', serif;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid var(--line);
+      background: var(--paper2);
+      font-family: 'Lora', serif;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--ink);
+      padding: 16px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+      border-radius: 1px;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: #bbb; font-style: italic; }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    button {
+      font-family: 'Lora', serif;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+      border: none;
+      cursor: pointer;
+      border-radius: 1px;
+      transition: all 0.15s;
+      padding: 12px 22px;
+    }
+
+    .btn-play {
+      background: var(--accent);
+      color: white;
+      font-weight: bold;
+      font-size: 1rem;
+      padding: 14px 32px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      box-shadow: 3px 3px 0 #8e1a12;
+    }
+    .btn-play:hover { transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #8e1a12; }
+    .btn-play:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 #8e1a12; }
+    .btn-play:disabled { background: #ccc; box-shadow: 2px 2px 0 #aaa; cursor: default; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--ink);
+      box-shadow: 2px 2px 0 var(--ink);
+    }
+    .btn-secondary:hover { background: var(--ink); color: var(--paper); }
+    .btn-secondary:disabled { opacity: 0.4; cursor: default; }
+
+    .btn-icon {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 10px 14px;
+      font-size: 1.1rem;
+    }
+    .btn-icon:hover { color: var(--accent); border-color: var(--accent); }
+
+    /* Progress bar */
+    .progress-wrap {
+      margin-top: 20px;
+    }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .progress-track {
+      height: 4px;
+      background: var(--line);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    /* Settings */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 500px) { .settings-grid { grid-template-columns: 1fr; } }
+
+    .setting-item label { margin-bottom: 6px; }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 3px;
+      background: var(--line);
+      outline: none;
+      border-radius: 2px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.2);
+    }
+
+    select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      background: var(--paper2);
+      font-family: 'Lora', serif;
+      font-size: 0.9rem;
+      color: var(--ink);
+      outline: none;
+      cursor: pointer;
+      border-radius: 1px;
+    }
+    select:focus { border-color: var(--accent); }
+
+    .value-display {
+      font-size: 0.8rem;
+      color: var(--accent);
+      font-weight: bold;
+      float: right;
+    }
+
+    /* Current sentence highlight */
+    #text-display {
+      line-height: 2;
+      font-size: 1.05rem;
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    #text-display .sentence {
+      transition: background 0.3s;
+      border-radius: 2px;
+      padding: 0 3px;
+      cursor: pointer;
+    }
+    #text-display .sentence:hover { background: rgba(192,57,43,0.08); }
+    #text-display .sentence.active {
+      background: rgba(192,57,43,0.15);
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* Status */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 14px;
+    }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      transition: background 0.3s;
+    }
+    .status-dot.playing { background: #27ae60; animation: pulse 1s infinite; }
+    .status-dot.paused { background: var(--accent2); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 8px 0;
+      color: var(--muted);
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .tip {
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-style: italic;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .no-tts {
+      color: var(--accent);
+      font-style: italic;
+      font-size: 0.85rem;
+      padding: 12px;
+      border: 1px dashed var(--accent);
+      margin-top: 12px;
+    }
+
+    /* Mobile big controls */
+    @media (max-width: 600px) {
+      .btn-play { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="masthead">Đọc <span>Báo</span></div>
+    <div class="tagline">Nghe khi lái xe · Text to Speech</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- URL Input -->
+  <div class="card">
+    <label>🔗 Dán link bài báo (tự động lấy nội dung)</label>
+    <div style="display:flex;gap:10px;align-items:stretch;">
+      <input type="url" id="url-input" placeholder="https://vnexpress.net/..." 
+        style="flex:1;padding:12px 16px;border:1px solid var(--line);background:var(--paper2);
+               font-family:'Lora',serif;font-size:0.95rem;color:var(--ink);outline:none;
+               border-radius:1px;min-width:0;"
+        onkeydown="if(event.key==='Enter') fetchArticle()">
+      <button class="btn-play" id="btn-fetch" onclick="fetchArticle()" 
+        style="white-space:nowrap;padding:12px 20px;font-size:0.85rem;">
+        📥 Lấy bài
+      </button>
+    </div>
+    <div id="fetch-status" style="font-size:0.78rem;color:var(--muted);margin-top:8px;font-style:italic;min-height:18px;"></div>
+
+    <div class="divider" style="margin:16px 0">hoặc dán text thủ công</div>
+
+    <label>📋 Dán nội dung bài báo vào đây</label>
+    <textarea id="article-input" placeholder="Dán văn bản tiếng Việt vào đây... Ví dụ: copy toàn bộ nội dung bài báo rồi Ctrl+V"></textarea>
+    <div class="controls">
+      <button class="btn-play" id="btn-start" onclick="startReading()">▶ BẮT ĐẦU ĐỌC</button>
+      <button class="btn-secondary" id="btn-pause" onclick="togglePause()" disabled>⏸ Tạm dừng</button>
+      <button class="btn-secondary" id="btn-stop" onclick="stopReading()" disabled>⏹ Dừng</button>
+      <button class="btn-icon" onclick="clearAll()" title="Xóa nội dung">🗑</button>
+    </div>
+    <div class="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Sẵn sàng</span>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="card" id="progress-card" style="display:none">
+    <div class="progress-label">
+      <span>Tiến độ đọc</span>
+      <span id="progress-text">0 / 0 câu</span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
+    <div class="divider" style="margin-top:20px">Đang đọc</div>
+    <div id="text-display"></div>
+  </div>
+
+  <!-- Settings -->
+  <div class="card">
+    <label style="margin-bottom:16px">⚙️ Cài đặt giọng đọc (Microsoft Edge TTS)</label>
+    <div class="settings-grid">
+      <div class="setting-item">
+        <label>Giọng đọc</label>
+        <select id="voice-select" onchange="updateVoice()">
+          <optgroup label="🇻🇳 Tiếng Việt — Nữ">
+            <option value="vi-VN-HoaiMyNeural" selected>HoaiMy — Nữ miền Nam ⭐</option>
+            <option value="vi-VN-ThuHuongNeural">ThuHuong — Nữ miền Bắc</option>
+          </optgroup>
+          <optgroup label="🇻🇳 Tiếng Việt — Nam">
+            <option value="vi-VN-NamMinhNeural">NamMinh — Nam miền Nam ⭐</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="setting-item">
+        <label>Tốc độ <span class="value-display" id="rate-val">0%</span></label>
+        <input type="range" id="rate" min="-50" max="100" step="5" value="0"
+          oninput="document.getElementById('rate-val').textContent=(this.value>0?'+':'')+this.value+'%'">
+      </div>
+      <div class="setting-item">
+        <label>Cao độ <span class="value-display" id="pitch-val">0Hz</span></label>
+        <input type="range" id="pitch" min="-20" max="20" step="1" value="0"
+          oninput="document.getElementById('pitch-val').textContent=(this.value>0?'+':'')+this.value+'Hz'">
+      </div>
+      <div class="setting-item">
+        <label>Worker URL</label>
+        <input type="url" id="worker-url" placeholder="https://your-worker.workers.dev"
+          style="width:100%;padding:8px 12px;border:1px solid var(--line);background:var(--paper2);
+                 font-family:'Lora',serif;font-size:0.85rem;color:var(--ink);outline:none;border-radius:1px;">
+      </div>
+    </div>
+    <p class="tip">⭐ Giọng <strong>HoaiMy</strong> và <strong>NamMinh</strong> là giọng AI Neural của Microsoft — rất tự nhiên. Cần deploy Cloudflare Worker trước (xem hướng dẫn bên dưới).</p>
+  </div>
+
+  <!-- Hướng dẫn -->
+  <div class="card">
+    <label>📖 Cách deploy Cloudflare Worker (5 phút, miễn phí)</label>
+    <p style="line-height:2; font-size:0.9rem; color:var(--muted);">
+      1. Vào <strong>workers.cloudflare.com</strong> → Đăng ký miễn phí<br>
+      2. Nhấn <strong>Create Worker</strong> → xóa code mẫu<br>
+      3. Copy toàn bộ code trong file <strong>cloudflare-worker.js</strong> → paste vào<br>
+      4. Nhấn <strong>Deploy</strong> → copy URL dạng <em>https://tên.workers.dev</em><br>
+      5. Dán URL đó vào ô <strong>Worker URL</strong> bên trên → xong! 🎉<br><br>
+      <em>Miễn phí 100,000 request/ngày — đủ dùng cả năm.</em>
+    </p>
+  </div>
+
+</div>
+
+
+<script>
+  // ── STATE ──────────────────────────────────────────────────────────────────
+  let sentences = [];
+  let currentIdx = 0;
+  let isPlaying = false;
+  let isPaused = false;
+  let currentAudio = null;
+
+  function updateVoice() {} // static dropdown, no-op
+
+  // ── FETCH ARTICLE FROM URL ─────────────────────────────────────────────────
+  const PROXIES = [
+    url => `https://api.allorigins.win/get?disableCache=true&url=${encodeURIComponent(url)}`,
+    url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  ];
+
+  async function fetchArticle() {
+    const url = document.getElementById('url-input').value.trim();
+    if (!url || !url.startsWith('http')) {
+      setFetchStatus('⚠️ Vui lòng nhập URL hợp lệ (bắt đầu bằng https://)', 'error'); return;
+    }
+    setFetchStatus('⏳ Đang tải bài báo...', 'loading');
+    document.getElementById('btn-fetch').disabled = true;
+
+    let html = null;
+    for (const makeProxy of PROXIES) {
+      try {
+        const res = await fetch(makeProxy(url), { signal: AbortSignal.timeout(12000) });
+        if (!res.ok) continue;
+        const ct = res.headers.get('content-type') || '';
+        html = ct.includes('json') ? (await res.json()).contents : await res.text();
+        if (html && html.length > 500) break;
+      } catch(e) { console.warn('proxy fail', e); }
+    }
+    document.getElementById('btn-fetch').disabled = false;
+
+    if (!html) { setFetchStatus('❌ Không lấy được bài. Trang này chặn — hãy copy text thủ công.', 'error'); return; }
+    const text = extractArticleText(html);
+    if (!text || text.length < 100) { setFetchStatus('❌ Không tìm thấy nội dung. Hãy copy text thủ công.', 'error'); return; }
+
+    document.getElementById('article-input').value = text;
+    setFetchStatus(`✅ Lấy được ${text.length} ký tự. Nhấn Bắt đầu đọc!`, 'ok');
+  }
+
+  function extractArticleText(html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    ['script','style','nav','header','footer','iframe','aside','form','button',
+     '.ads','.comment','.related','.social','.share','.banner','.sidebar']
+      .forEach(s => { try { doc.querySelectorAll(s).forEach(e => e.remove()); } catch(e){} });
+
+    const selectors = ['.fck_detail','.Normal','.detail-content','.detail__content',
+      '.detail-content-body','.the-article-body','.singular-content','.maincontent',
+      'article','[itemprop="articleBody"]','.article-body','.article-content',
+      '.post-content','.entry-content','[class*="article-body"]','[class*="article-content"]'];
+
+    let bestEl = null, bestLen = 0;
+    for (const sel of selectors) {
+      try { doc.querySelectorAll(sel).forEach(el => {
+        const len = el.textContent?.length || 0;
+        if (len > bestLen) { bestLen = len; bestEl = el; }
+      }); } catch(e){}
+    }
+    if (!bestEl || bestLen < 200) {
+      doc.querySelectorAll('div,section').forEach(el => {
+        const len = el.textContent?.length || 0;
+        if (el.querySelectorAll('p').length >= 3 && len > bestLen) { bestLen = len; bestEl = el; }
+      });
+    }
+    if (!bestEl) bestEl = doc.body;
+
+    const title = doc.querySelector('h1')?.textContent?.trim() || '';
+    const paras = title ? [title] : [];
+    const pEls = bestEl.querySelectorAll('p,h2,h3');
+    if (pEls.length > 0) {
+      pEls.forEach(p => { const t = p.textContent.trim(); if (t.length > 30) paras.push(t); });
+    } else {
+      bestEl.textContent.split('\n').map(l=>l.trim()).filter(l=>l.length>30).forEach(l=>paras.push(l));
+    }
+    return paras.join('\n\n');
+  }
+
+  function setFetchStatus(msg, type) {
+    const el = document.getElementById('fetch-status');
+    el.textContent = msg;
+    el.style.color = type==='error'?'var(--accent)':type==='ok'?'#27ae60':'var(--muted)';
+  }
+
+  // ── EDGE TTS via CLOUDFLARE WORKER ─────────────────────────────────────────
+  function getWorkerUrl() {
+    return (document.getElementById('worker-url').value || '').trim().replace(/\/$/, '');
+  }
+
+  function getVoiceSettings() {
+    const rate  = parseInt(document.getElementById('rate').value);
+    const pitch = parseInt(document.getElementById('pitch').value);
+    return {
+      voice: document.getElementById('voice-select').value,
+      rate:  (rate  >= 0 ? '+' : '') + rate  + '%',
+      pitch: (pitch >= 0 ? '+' : '') + pitch + 'Hz',
+    };
+  }
+
+  async function synthesizeChunk(text) {
+    const workerUrl = getWorkerUrl();
+    if (!workerUrl) throw new Error('Chưa nhập Worker URL! Xem hướng dẫn bên dưới.');
+
+    const { voice, rate, pitch } = getVoiceSettings();
+    const res = await fetch(workerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice, rate, pitch }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!res.ok) throw new Error(`Worker lỗi ${res.status}`);
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  }
+
+  // ── PLAYBACK ───────────────────────────────────────────────────────────────
+  function splitParagraphs(text) {
+    return text.replace(/\r\n/g,'\n').split(/\n+/).map(p=>p.trim()).filter(p=>p.length>2);
+  }
+
+  function startReading() {
+    const text = document.getElementById('article-input').value.trim();
+    if (!text) { alert('Vui lòng dán nội dung bài báo!'); return; }
+    if (!getWorkerUrl()) {
+      alert('Chưa nhập Worker URL!\n\nHãy deploy Cloudflare Worker theo hướng dẫn bên dưới rồi dán URL vào ô "Worker URL" trong cài đặt.');
+      return;
+    }
+    stopReading();
+    sentences = splitParagraphs(text);
+    currentIdx = 0;
+    renderDisplay();
+    document.getElementById('progress-card').style.display = 'block';
+    isPlaying = true; isPaused = false;
+    updateButtons();
+    speakNext();
+  }
+
+  function renderDisplay() {
+    document.getElementById('text-display').innerHTML =
+      sentences.map((s,i) => `<span class="sentence" id="s-${i}" onclick="jumpTo(${i})">${s}</span><br><br>`).join('');
+  }
+
+  async function speakNext() {
+    if (!isPlaying || currentIdx >= sentences.length) {
+      if (currentIdx >= sentences.length) {
+        setStatus('✅ Đã đọc xong!'); isPlaying = false; updateButtons();
+      }
+      return;
+    }
+
+    highlightSentence(currentIdx);
+    updateProgress();
+    setStatus(`⏳ Đang tổng hợp đoạn ${currentIdx+1}/${sentences.length}...`);
+
+    try {
+      const audioUrl = await synthesizeChunk(sentences[currentIdx]);
+      if (!isPlaying) { URL.revokeObjectURL(audioUrl); return; }
+
+      currentAudio = new Audio(audioUrl);
+      currentAudio.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        if (isPlaying && !isPaused) { currentIdx++; speakNext(); }
+      };
+      currentAudio.onerror = () => {
+        URL.revokeObjectURL(audioUrl);
+        if (isPlaying) { currentIdx++; setTimeout(speakNext, 300); }
+      };
+      setStatus(`🔊 Đang đọc đoạn ${currentIdx+1} / ${sentences.length}`);
+      await currentAudio.play();
+    } catch(err) {
+      console.error(err);
+      setStatus(`❌ Lỗi: ${err.message}`);
+      isPlaying = false; updateButtons();
+    }
+  }
+
+  function highlightSentence(idx) {
+    document.querySelectorAll('.sentence').forEach(el => el.classList.remove('active'));
+    const el = document.getElementById(`s-${idx}`);
+    if (el) { el.classList.add('active'); el.scrollIntoView({ behavior:'smooth', block:'center' }); }
+  }
+
+  function updateProgress() {
+    const pct = sentences.length > 0 ? (currentIdx/sentences.length*100) : 0;
+    document.getElementById('progress-fill').style.width = pct+'%';
+    document.getElementById('progress-text').textContent = `${currentIdx} / ${sentences.length} đoạn`;
+  }
+
+  function togglePause() {
+    if (!isPlaying) return;
+    if (isPaused) {
+      currentAudio?.play(); isPaused = false;
+      setStatus('▶ Tiếp tục đọc...');
+      document.getElementById('btn-pause').textContent = '⏸ Tạm dừng';
+    } else {
+      currentAudio?.pause(); isPaused = true;
+      setStatus('⏸ Đang tạm dừng');
+      document.getElementById('btn-pause').textContent = '▶ Tiếp tục';
+    }
+    updateDot();
+  }
+
+  function stopReading() {
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    isPlaying = false; isPaused = false;
+    setStatus('Đã dừng'); updateButtons();
+    document.querySelectorAll('.sentence').forEach(el => el.classList.remove('active'));
+  }
+
+  function jumpTo(idx) {
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    currentIdx = idx;
+    if (isPlaying || confirm('Bắt đầu đọc từ đoạn này?')) {
+      isPlaying = true; isPaused = false; updateButtons(); speakNext();
+    }
+  }
+
+  function clearAll() {
+    stopReading();
+    document.getElementById('article-input').value = '';
+    document.getElementById('progress-card').style.display = 'none';
+    setStatus('Sẵn sàng');
+  }
+
+  function updateButtons() {
+    document.getElementById('btn-start').disabled = isPlaying;
+    document.getElementById('btn-pause').disabled = !isPlaying;
+    document.getElementById('btn-stop').disabled = !isPlaying;
+    document.getElementById('btn-pause').textContent = isPaused ? '▶ Tiếp tục' : '⏸ Tạm dừng';
+    updateDot();
+  }
+
+  function updateDot() {
+    const dot = document.getElementById('status-dot');
+    dot.className = 'status-dot' + (isPlaying && !isPaused ? ' playing' : isPaused ? ' paused' : '');
+  }
+
+  function setStatus(text) {
+    document.getElementById('status-text').textContent = text;
+    updateDot();
+  }
+
+  // Lưu Worker URL vào localStorage để không phải nhập lại
+  const savedWorker = localStorage.getItem('edgeTtsWorkerUrl');
+  if (savedWorker) document.getElementById('worker-url').value = savedWorker;
+  document.getElementById('worker-url').addEventListener('input', e => {
+    localStorage.setItem('edgeTtsWorkerUrl', e.target.value);
+  });
+</script>
+</body>
+</html>
