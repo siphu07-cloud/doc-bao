@@ -401,16 +401,22 @@
   let isPaused = false;
   let currentUtterance = null;
 
-  // Load voices — Chrome loads async, need to wait
+  // Vietnamese voice detection — includes macOS "Linh", iOS voices, Google Vietnamese
+  const VI_NAMES = ['linh', 'vietnamese', 'viet', 'vi-vn', 'vi_vn'];
+  function isVietnamese(v) {
+    return v.lang.startsWith('vi') ||
+           VI_NAMES.some(n => v.name.toLowerCase().includes(n));
+  }
+
   function loadVoices() {
     voices = synth.getVoices();
-    if (voices.length === 0) return; // not ready yet
+    if (voices.length === 0) return;
 
     const sel = document.getElementById('voice-select');
     sel.innerHTML = '';
 
-    const viVoices = voices.filter(v => v.lang.startsWith('vi'));
-    const otherVoices = voices.filter(v => !v.lang.startsWith('vi'));
+    const viVoices = voices.filter(isVietnamese);
+    const otherVoices = voices.filter(v => !isVietnamese(v));
 
     if (viVoices.length > 0) {
       const g1 = document.createElement('optgroup');
@@ -434,28 +440,17 @@
     });
     sel.appendChild(g2);
 
-    // Auto-select best Vietnamese voice
-    // Prefer "Google Vietnamese" on Chrome, then any vi voice
-    const preferred = viVoices.find(v => v.name.toLowerCase().includes('google'))
-                   || viVoices[0];
-    if (preferred) {
-      sel.value = preferred.name;
-      document.getElementById('voice-name').textContent = preferred.name;
-    }
-
-    if (voices.length === 0) {
-      sel.innerHTML = '<option value="">Không tìm thấy giọng đọc</option>';
-    }
+    // Auto-select: prefer offline Vietnamese voice (Linh on macOS)
+    const preferred = viVoices.find(v => v.localService) || viVoices[0];
+    if (preferred) sel.value = preferred.name;
 
     updateVoiceInfo();
   }
 
-  // Chrome fires onvoiceschanged, but also need to poll on first load
   synth.onvoiceschanged = loadVoices;
   loadVoices();
-  // Fallback: Chrome sometimes needs a small delay
-  setTimeout(loadVoices, 500);
-  setTimeout(loadVoices, 1500);
+  setTimeout(loadVoices, 300);
+  setTimeout(loadVoices, 1000);
 
   function updateVoice() {
     updateVoiceInfo();
@@ -520,6 +515,9 @@
     ).join('');
   }
 
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
   function speakNext() {
     if (currentIdx >= sentences.length || !isPlaying) {
       if (currentIdx >= sentences.length) {
@@ -530,14 +528,17 @@
       return;
     }
 
+    // iOS Safari: cancel any pending before speaking
+    if (isIOS) synth.cancel();
+
     const sentence = sentences[currentIdx];
     currentUtterance = new SpeechSynthesisUtterance(sentence);
 
     const sel = document.getElementById('voice-select');
     const voice = voices.find(v => v.name === sel.value);
 
-    // IMPORTANT: Set lang BEFORE voice for Chrome
-    currentUtterance.lang = voice?.lang || 'vi-VN';
+    currentUtterance.lang = voice?.lang ||
+      (isVietnamese(voice || {name:'',lang:''}) ? 'vi-VN' : 'vi-VN');
     if (voice) currentUtterance.voice = voice;
 
     currentUtterance.rate = parseFloat(document.getElementById('rate').value);
@@ -547,20 +548,23 @@
     currentUtterance.onstart = () => {
       highlightSentence(currentIdx);
       updateProgress();
-      setStatus(`Đang đọc câu ${currentIdx + 1}/${sentences.length}`, 'playing');
+      setStatus(`Đang đọc câu ${currentIdx + 1} / ${sentences.length}`, 'playing');
     };
 
     currentUtterance.onend = () => {
       if (isPlaying && !isPaused) {
         currentIdx++;
-        speakNext();
+        // iOS Safari needs a small delay between utterances
+        const delay = isIOS ? 300 : 0;
+        setTimeout(speakNext, delay);
       }
     };
 
     currentUtterance.onerror = (e) => {
-      if (e.error !== 'interrupted') {
+      console.warn('TTS error:', e.error);
+      if (e.error !== 'interrupted' && e.error !== 'canceled') {
         currentIdx++;
-        setTimeout(speakNext, 100);
+        setTimeout(speakNext, 300);
       }
     };
 
